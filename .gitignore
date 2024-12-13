@@ -1,3 +1,8 @@
+# project specific
+build
+CMakeFiles
+imager_demo/libsatcam
+
 # Prerequisites
 *.d
 
