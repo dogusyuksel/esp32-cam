@@ -57,9 +57,9 @@ jobs:
       run: |
         ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/imager_demo && ./build.sh"
 
-    - name: Build Client
-      run: |
-        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/camera_ctl && ./build.sh"
+#    - name: Build Client
+#      run: |
+#        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/camera_ctl && ./build.sh"
     
 #    - name: flake8
 #      run: |
