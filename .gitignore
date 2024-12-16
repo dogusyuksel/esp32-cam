@@ -1,7 +1,9 @@
 # project specific
 build
 CMakeFiles
-imager_demo/libsatcam
+docker
+ip_camera/build
+ip_camera/managed_components
 
 # Prerequisites
 *.d

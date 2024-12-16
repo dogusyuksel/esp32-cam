@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        github-server-url: https://github.com/dogusyuksel/sat-cam.git
+        github-server-url: https://github.com/dogusyuksel/esp32-cam.git
         lfs: true
 
     - name: clone docker
@@ -45,23 +45,7 @@ jobs:
         push: false
         provenance: false
 
-    - name: Build Library
+    - name: Build ip_camera
       run: |
-        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/libsatcam && ./build.sh"
+        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd  /esp-idf && . ./export.sh && cd /workspace/ip_camera && mkdir build && cd build && cmake .. && make"
 
-#    - name: Test Library
-#      run: |
-#        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/libsatcam && ceedling test:all"
-
-    - name: Build Imager
-      run: |
-        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/imager_demo && ./build.sh"
-
-#    - name: Build Client
-#      run: |
-#        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/camera_ctl && ./build.sh"
-    
-#    - name: flake8
-#      run: |
-#         echo "'isort .' can be executed if needed"
-#         ./docker/run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd /workspace/post_process && flake8 --max-line-length=120"
