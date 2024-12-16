@@ -1,3 +1,10 @@
+# project specific
+build
+CMakeFiles
+docker
+ip_camera/build
+ip_camera/managed_components
+
 # Prerequisites
 *.d
 
