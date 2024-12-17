@@ -25,7 +25,7 @@ ESP32-camera module development environment
 * go into any project and type
 
 ```
-mkdir build && cd build && cmake ..&& make
+idf.py build
 ```
 
 # How To Flash
@@ -33,12 +33,331 @@ mkdir build && cd build && cmake ..&& make
 Use the following command
 
 ```
-TODO
+idf.py -p /dev/ttyUSB0 flash
 ```
 
 # How to See Output
 
-TODO
+```
+root@spire:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
+Executing action: flash
+Running ninja in directory /workspace/ip_camera/build
+Executing "ninja flash"...
+[1/5] cd /workspace/ip_camera/build/esp-idf/esptool_py && /root/.espressif/pyth...rtition_table/partition-table.bin /workspace/ip_camera/build/camera_example.bin
+camera_example.bin binary size 0x4d320 bytes. Smallest app partition is 0x100000 bytes. 0xb2ce0 bytes (70%) free.
+[1/1] cd /workspace/ip_camera/build/bootloader/esp-idf/esptool_py && /root/.esp... 0x10000 bootloader 0x1000 /workspace/ip_camera/build/bootloader/bootloader.bin
+Bootloader binary size 0x6f50 bytes. 0x80b0 bytes (54%) free.
+[2/3] cd /esp-idf/components/esptool_py && /usr/bin/cmake -D IDF_PATH=/esp-idf ...rkspace/ip_camera/build -P /esp-idf/components/esptool_py/run_serial_tool.cmake
+esptool.py --chip esp32 -p /dev/ttyUSB0 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 4MB 0x1000 bootloader/bootloader.bin 0x20000 camera_example.bin 0x10000 partition_table/partition-table.bin
+esptool.py v4.8.1
+Serial port /dev/ttyUSB0
+Connecting....
+Chip is ESP32-D0WDQ6 (revision v1.1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+Crystal is 40MHz
+MAC: fc:b4:67:01:c1:80
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00001000 to 0x00007fff...
+Flash will be erased from 0x00020000 to 0x0006dfff...
+Flash will be erased from 0x00010000 to 0x00010fff...
+SHA digest in image updated
+Compressed 28496 bytes to 17337...
+Writing at 0x00007a5d... (100 %)
+Wrote 28496 bytes (17337 compressed) at 0x00001000 in 0.5 seconds (effective 431.6 kbit/s)...
+Hash of data verified.
+Compressed 316192 bytes to 161581...
+Writing at 0x00067909... (100 %)
+Wrote 316192 bytes (161581 compressed) at 0x00020000 in 3.8 seconds (effective 667.6 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 104...
+Writing at 0x00010000... (100 %)
+Wrote 3072 bytes (104 compressed) at 0x00010000 in 0.0 seconds (effective 1254.0 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+Executing action: monitor
+Running idf_monitor in directory /workspace/ip_camera
+Executing "/root/.espressif/python_env/idf5.3_py3.10_env/bin/python /esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 /workspace/ip_camera/build/camera_example.elf -m '/root/.espressif/python_env/idf5.3_py3.10_env/bin/python' '/esp-idf/tools/idf.py' '-p' '/dev/ttyUSB0'"...
+--- esp-idf-monitor 1.5.0 on /dev/ttyUSB0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+ets Jun  8 2016 00:22:57
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:7524
+load:0x40078000,len:16552
+load:0x40080400,len:4
+--- 0x40080400: _init at ??:?
+
+load:0x40080404,len:4312
+entry 0x4008065c
+I (28) boot: ESP-IDF v5.3.2 2nd stage bootloader
+I (28) boot: compile time Dec 17 2024 12:57:20
+I (29) boot: Multicore bootloader
+I (33) boot: chip revision: v1.1
+I (36) qio_mode: Enabling default flash chip QIO
+I (42) boot.esp32: SPI Speed      : 80MHz
+I (46) boot.esp32: SPI Mode       : QIO
+I (51) boot.esp32: SPI Flash Size : 4MB
+I (55) boot: Enabling RNG early entropy source...
+I (61) boot: Partition Table:
+I (64) boot: ## Label            Usage          Type ST Offset   Length
+I (72) boot:  0 nvs              WiFi data        01 02 00011000 00006000
+I (79) boot:  1 phy_init         RF data          01 01 00017000 00001000
+I (87) boot:  2 factory          factory app      00 00 00020000 00100000
+I (94) boot: End of partition table
+I (98) esp_image: segment 0: paddr=00020020 vaddr=3f400020 size=121dch ( 74204) map
+I (126) esp_image: segment 1: paddr=00032204 vaddr=3ffb0000 size=034e0h ( 13536) load
+I (130) esp_image: segment 2: paddr=000356ec vaddr=40080000 size=0a92ch ( 43308) load
+I (145) esp_image: segment 3: paddr=00040020 vaddr=400d0020 size=25944h (153924) map
+I (185) esp_image: segment 4: paddr=0006596c vaddr=4008a92c size=07984h ( 31108) load
+I (204) boot: Loaded app from partition at offset 0x20000
+I (204) boot: Disabling RNG early entropy source...
+I (216) quad_psram: This chip is ESP32-D0WD
+I (216) esp_psram: Found 8MB PSRAM device
+I (216) esp_psram: Speed: 80MHz
+I (220) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.
+W (227) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped
+I (236) cpu_start: Multicore app
+D (240) cpu_start: Pro cpu up
+D (243) cpu_start: Starting app cpu, entry point is 0x40081404
+--- 0x40081404: call_start_cpu1 at /esp-idf/components/esp_system/port/cpu_start.c:190
+
+D (0) cpu_start: App cpu up
+I (760) esp_psram: SPI SRAM memory test OK
+D (768) clk: RTC_SLOW_CLK calibration value: 3431501
+D (773) cpu_start: calling init function: 0x400d2058 on core: 0
+--- 0x400d2058: __esp_system_init_fn_init_efuse_check at /esp-idf/components/efuse/src/esp_efuse_startup.c:31
+
+D (773) cpu_start: calling init function: 0x400d22d8 on core: 0
+--- 0x400d22d8: __esp_system_init_fn_init_show_cpu_freq at /esp-idf/components/esp_system/startup_funcs.c:58
+
+I (776) cpu_start: Pro cpu start user code
+I (780) cpu_start: cpu freq: 240000000 Hz
+D (785) cpu_start: calling init function: 0x400d1f98 on core: 0
+--- 0x400d1f98: __esp_system_init_fn_init_show_app_info at /esp-idf/components/esp_app_format/esp_app_desc.c:106
+
+I (791) app_init: Application information:
+I (796) app_init: Project name:     camera_example
+I (801) app_init: App version:      944b69c-dirty
+I (807) app_init: Compile time:     Dec 17 2024 12:57:15
+I (813) app_init: ELF file SHA256:  856aff165...
+I (818) app_init: ESP-IDF:          v5.3.2
+D (823) cpu_start: calling init function: 0x400d206c on core: 0
+--- 0x400d206c: __esp_system_init_fn_init_efuse_show_app_info at /esp-idf/components/efuse/src/esp_efuse_startup.c:41
+
+I (829) efuse_init: Min chip rev:     v0.0
+I (833) efuse_init: Max chip rev:     v3.99 
+I (838) efuse_init: Chip rev:         v1.1
+D (843) cpu_start: calling init function: 0x400d3a7c on core: 0
+--- 0x400d3a7c: __esp_system_init_fn_init_heap at /esp-idf/components/heap/heap_caps_init.c:25
+
+D (849) memory_layout: Checking 10 reserved memory ranges:
+D (855) memory_layout: Reserved memory range 0x3f800000 - 0x3fc00000
+D (861) memory_layout: Reserved memory range 0x3ff82000 - 0x3ff82000
+D (868) memory_layout: Reserved memory range 0x3ffae000 - 0x3ffae6e0
+D (874) memory_layout: Reserved memory range 0x3ffb0000 - 0x3ffb3e40
+D (880) memory_layout: Reserved memory range 0x3ffe0000 - 0x3ffe0440
+D (887) memory_layout: Reserved memory range 0x3ffe3f20 - 0x3ffe4350
+D (893) memory_layout: Reserved memory range 0x40070000 - 0x40078000
+D (900) memory_layout: Reserved memory range 0x40078000 - 0x40080000
+--- 0x40080000: _WindowOverflow4 at /esp-idf/components/xtensa/xtensa_vectors.S:2027
+
+D (906) memory_layout: Reserved memory range 0x40080000 - 0x400922b0
+--- 0x40080000: _WindowOverflow4 at /esp-idf/components/xtensa/xtensa_vectors.S:2027
+
+D (913) memory_layout: Reserved memory range 0x50001fe8 - 0x50002000
+D (919) memory_layout: Building list of available memory regions:
+D (925) memory_layout: Available memory region 0x3ffae6e0 - 0x3ffb0000
+D (932) memory_layout: Available memory region 0x3ffb3e40 - 0x3ffb8000
+D (938) memory_layout: Available memory region 0x3ffb8000 - 0x3ffc0000
+D (945) memory_layout: Available memory region 0x3ffc0000 - 0x3ffc2000
+D (952) memory_layout: Available memory region 0x3ffc2000 - 0x3ffc4000
+D (958) memory_layout: Available memory region 0x3ffc4000 - 0x3ffc6000
+D (965) memory_layout: Available memory region 0x3ffc6000 - 0x3ffc8000
+D (971) memory_layout: Available memory region 0x3ffc8000 - 0x3ffca000
+D (978) memory_layout: Available memory region 0x3ffca000 - 0x3ffcc000
+D (985) memory_layout: Available memory region 0x3ffcc000 - 0x3ffce000
+D (991) memory_layout: Available memory region 0x3ffce000 - 0x3ffd0000
+D (998) memory_layout: Available memory region 0x3ffd0000 - 0x3ffd2000
+D (1004) memory_layout: Available memory region 0x3ffd2000 - 0x3ffd4000
+D (1011) memory_layout: Available memory region 0x3ffd4000 - 0x3ffd6000
+D (1018) memory_layout: Available memory region 0x3ffd6000 - 0x3ffd8000
+D (1024) memory_layout: Available memory region 0x3ffd8000 - 0x3ffda000
+D (1031) memory_layout: Available memory region 0x3ffda000 - 0x3ffdc000
+D (1038) memory_layout: Available memory region 0x3ffdc000 - 0x3ffde000
+D (1044) memory_layout: Available memory region 0x3ffde000 - 0x3ffe0000
+D (1051) memory_layout: Available memory region 0x3ffe0440 - 0x3ffe3f20
+D (1058) memory_layout: Available memory region 0x3ffe4350 - 0x3ffe8000
+D (1064) memory_layout: Available memory region 0x3ffe8000 - 0x3fff0000
+D (1071) memory_layout: Available memory region 0x3fff0000 - 0x3fff8000
+D (1078) memory_layout: Available memory region 0x3fff8000 - 0x3fffc000
+D (1085) memory_layout: Available memory region 0x3fffc000 - 0x40000000
+--- 0x40000000: _WindowOverflow4 in ROM
+
+D (1091) memory_layout: Available memory region 0x400922b0 - 0x40094000
+D (1098) memory_layout: Available memory region 0x40094000 - 0x40096000
+D (1105) memory_layout: Available memory region 0x40096000 - 0x40098000
+D (1111) memory_layout: Available memory region 0x40098000 - 0x4009a000
+D (1118) memory_layout: Available memory region 0x4009a000 - 0x4009c000
+D (1125) memory_layout: Available memory region 0x4009c000 - 0x4009e000
+D (1131) memory_layout: Available memory region 0x4009e000 - 0x400a0000
+I (1138) heap_init: Initializing. RAM available for dynamic allocation:
+D (1145) heap_init: New heap initialised at 0x3ffae6e0
+I (1151) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+D (1157) heap_init: New heap initialised at 0x3ffb3e40
+I (1162) heap_init: At 3FFB3E40 len 0002C1C0 (176 KiB): DRAM
+I (1168) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (1175) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+D (1181) heap_init: New heap initialised at 0x400922b0
+I (1186) heap_init: At 400922B0 len 0000DD50 (55 KiB): IRAM
+D (1193) cpu_start: calling init function: 0x400d1da0 on core: 0
+--- 0x400d1da0: __esp_system_init_fn_esp_timer_init_nonos at /esp-idf/components/esp_timer/src/esp_timer_init.c:28
+
+D (1199) cpu_start: calling init function: 0x400d4cf8 on core: 0
+--- 0x400d4cf8: __esp_system_init_fn_init_newlib at /esp-idf/components/newlib/newlib_init.c:162
+
+D (1205) cpu_start: calling init function: 0x400d5590 on core: 0
+--- 0x400d5590: __esp_system_init_fn_init_psram at /esp-idf/components/esp_psram/esp_psram.c:94
+
+I (1211) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator
+D (1218) cpu_start: calling init function: 0x400d231c on core: 0
+--- 0x400d231c: __esp_system_init_fn_init_brownout at /esp-idf/components/esp_system/startup_funcs.c:67
+
+D (1225) intr_alloc: Connected src 46 to int 1 (cpu 0)
+D (1230) cpu_start: calling init function: 0x400d2328 on core: 0
+--- 0x400d2328: __esp_system_init_fn_init_newlib_time at /esp-idf/components/esp_system/startup_funcs.c:81
+
+D (1236) cpu_start: calling init function: 0x400d4d64 on core: 0
+--- 0x400d4d64: __esp_system_init_fn_init_newlib_stdio at /esp-idf/components/newlib/newlib_init.c:207
+
+D (1242) cpu_start: calling init function: 0x400d5134 on core: 0
+--- 0x400d5134: __esp_system_init_fn_init_pthread at /esp-idf/components/pthread/pthread.c:76
+
+D (1248) cpu_start: calling init function: 0x400d2334 on core: 0
+--- 0x400d2334: __esp_system_init_fn_init_flash at /esp-idf/components/esp_system/startup_funcs.c:88
+
+D (1254) spi_flash: trying chip: issi
+D (1258) spi_flash: trying chip: gd
+D (1261) spi_flash: trying chip: mxic
+D (1265) spi_flash: trying chip: winbond
+D (1269) spi_flash: trying chip: generic
+I (1273) spi_flash: detected chip: generic
+I (1278) spi_flash: flash io: qio
+D (1282) chip_generic: set_io_mode: status before 0x200
+D (1287) cpu_start: calling init function: 0x400d20f8 on core: 0
+--- 0x400d20f8: __esp_system_init_fn_init_efuse at /esp-idf/components/efuse/src/esp_efuse_startup.c:137
+
+D (1293) cpu_start: calling init function: 0x400e9ec4
+--- 0x400e9ec4: _GLOBAL__sub_I__ZN17__eh_globals_init7_S_initE at /builds/idf/crosstool-NG/.build/xtensa-esp-elf/src/gcc/libstdc++-v3/libsupc++/eh_globals.cc:162
+
+D (1298) cpu_start: calling init function: 0x400e9114
+--- 0x400e9114: check_i2c_driver_conflict at /esp-idf/components/driver/i2c/i2c.c:1713
+
+W (1303) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+D (1314) cpu_start: calling init function: 0x40089680
+--- 0x40089680: enable_timer_group0_for_calibration at /esp-idf/components/esp_hw_support/port/esp32/rtc_time.c:197
+
+D (1319) cpu_start: calling init function: 0x400d3300
+--- 0x400d3300: esp_ipc_init at /esp-idf/components/esp_system/esp_ipc.c:113
+
+D (1324) cpu_start: calling init function: 0x400d2940
+--- 0x400d2940: esp_reset_reason_init at /esp-idf/components/esp_system/port/soc/esp32/reset_reason.c:60
+
+D (1329) cpu_start: calling init function: 0x400d2358 on core: 0
+--- 0x400d2358: __esp_system_init_fn_init_disable_rtc_wdt at /esp-idf/components/esp_system/startup_funcs.c:143
+
+D (1335) intr_alloc: Connected src 24 to int 2 (cpu 0)
+D (1340) app_start: Starting scheduler on CPU0
+I5) intr_maioc: sknnected d on25Pto [nt 1 (cpu 1)
+D (1350) app_start: Starting scheduler on CPU1
+D (1354) heap_init: New heap initialised at 0x3ffe0440
+D (1360) heap_init: New heap initialised at 0x3ffe4350
+I (1365) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+D (1374) esp_psram: Allocating block of size 32768 bytes
+D (1379) intr_alloc: Connected src 16 to int 3 (cpu 0)
+I (1384) main_task: Calling app_main()
+I (1389) gpio: GPIO[25]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:2 
+D (1398) intr_alloc: Connected src 22 to int 5 (cpu 0)
+I (1403) cam_hal: cam init ok
+D (1407) camera: Enabling XCLK output
+D (1410) ledc: Using clock source 4 (in slow mode), divisor: 0x200
+D (1416) ledc: In slow speed mode, global clk set: 4
+D (1421) ledc: LEDC_PWM CHANNEL 0|GPIO 00|Duty 0001|Time 0
+D (1427) camera: Initializing SCCB
+I (1430) sccb: pin_sda 26 pin_scl 27
+I (1434) sccb: sccb_i2c_port=1
+D (1438) intr_alloc: Connected src 50 to int 8 (cpu 0)
+D (1443) camera: Resetting camera by power down line
+I (1448) gpio: GPIO[32]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+D (1478) camera: Searching for camera address
+I (1488) camera: Detected camera at address=0x30
+I (1491) camera: Detected OV2640 camera
+D (1491) ov2640: OV2640 Attached
+I (1491) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2
+D (1496) camera: Doing SW reset of sensor
+I (1582) esp32 ll_cam: node_size: 2560, nodes_per_line: 1, lines_per_node: 1, dma_half_buffer_min:  2560, dma_half_buffer: 15360,lines_per_half_buffer:  6, dma_buffer_size: 30720, image_size: 153600
+I (1589) cam_hal: buffer_size: 30720, half_buffer_size: 15360, node_buffer_size: 2560, node_cnt: 12, total_cnt: 10
+I (1600) cam_hal: Allocating 153600 Byte frame buffer in PSRAM
+D (1606) intr_alloc: Connected src 32 to int 9 (cpu 0)
+I (1611) cam_hal: cam config ok
+D (1615) camera: Setting frame size to 320x240
+I (1619) ov2640: Set PLL: clk_2x: 0, clk_div: 3, pclk_auto: 1, pclk_div: 8
+I (1699) example:take_picture: Taking picture...
+I (1887) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (6887) example:take_picture: Taking picture...
+I (6887) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (11888) example:take_picture: Taking picture...
+I (11888) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (16889) example:take_picture: Taking picture...
+I (16889) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (21890) example:take_picture: Taking picture...
+I (21890) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (26891) example:take_picture: Taking picture...
+I (26891) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (31892) example:take_picture: Taking picture...
+I (31892) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (36893) example:take_picture: Taking picture...
+I (36893) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (41894) example:take_picture: Taking picture...
+I (41894) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (46895) example:take_picture: Taking picture...
+I (46895) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (51896) example:take_picture: Taking picture...
+I (51896) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (56897) example:take_picture: Taking picture...
+I (56897) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (61898) example:take_picture: Taking picture...
+I (61898) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (66899) example:take_picture: Taking picture...
+I (66899) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (71900) example:take_picture: Taking picture...
+I (71900) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (76901) example:take_picture: Taking picture...
+I (76901) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (81902) example:take_picture: Taking picture...
+I (81902) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (86903) example:take_picture: Taking picture...
+I (86903) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (91904) example:take_picture: Taking picture...
+I (91904) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (96905) example:take_picture: Taking picture...
+I (96905) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (101906) example:take_picture: Taking picture...
+I (101906) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (106907) example:take_picture: Taking picture...
+I (106907) example:take_picture: Picture taken! Its size was: 153600 bytes
+I (111908) example:take_picture: Taking picture...
+I (111908) example:take_picture: Picture taken! Its size was: 153600 bytes
+```
 
 ## How to Test
 

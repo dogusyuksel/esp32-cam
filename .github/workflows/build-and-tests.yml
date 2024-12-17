@@ -47,5 +47,5 @@ jobs:
 
     - name: Build ip_camera
       run: |
-        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd  /esp-idf && . ./export.sh && cd /workspace/ip_camera && mkdir build && cd build && cmake .. && make"
+        ./docker/sudo_run_docker.sh ${{ secrets.DOCKER_REPO }}:master "cd  /esp-idf && . ./export.sh && cd /workspace/ip_camera && idf.py build"
 
