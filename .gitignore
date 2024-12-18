@@ -4,6 +4,7 @@ CMakeFiles
 docker
 ip_camera/build
 ip_camera/managed_components
+ip_camera/dependencies.lock
 
 # Prerequisites
 *.d
