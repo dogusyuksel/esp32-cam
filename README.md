@@ -39,9 +39,9 @@ idf.py -p /dev/ttyUSB0 flash
 # How to See Output
 
 ```
-root@spire:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
+root:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
 ````
-<details><summary>Logs</summary>root@spire:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
+<details><summary>Logs</summary>root:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
 
 Executing action: flash
 
@@ -7703,7 +7703,7 @@ I (00:04:20.269) camera_http_server: MJPG: 7KB 600ms (1.7fps)
 
 Done
 
-root@spire:/workspace/ip_camera# </details>
+root:/workspace/ip_camera# </details>
 
 ## How to Test
 
