@@ -47,18 +47,13 @@
 #include "esp_netif.h"
 #include "protocol_examples_common.h"
 #include "protocol_examples_utils.h"
-#include "esp_tls_crypto.h"
 #include <esp_http_server.h>
 #include "esp_event.h"
-#include "esp_netif.h"
-#include "esp_tls.h"
 #include "esp_check.h"
 #include "esp_camera.h"
 #include "esp_timer.h"
 #include <esp_wifi.h>
 #include <esp_system.h>
-#include "nvs_flash.h"
-#include "esp_eth.h"
 
 static const char *TAG = "camera_http_server";
 #define PART_BOUNDARY "123456789000000000000987654321"

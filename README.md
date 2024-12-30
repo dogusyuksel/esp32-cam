@@ -39,9 +39,9 @@ idf.py -p /dev/ttyUSB0 flash
 # How to See Output
 
 ```
-root@spire:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
+root:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
 ````
-<details><summary>Logs</summary>root@spire:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
+<details><summary>Logs</summary>root:/workspace/ip_camera# idf.py -p /dev/ttyUSB0 flash monitor
 
 Executing action: flash
 
@@ -7703,11 +7703,11 @@ I (00:04:20.269) camera_http_server: MJPG: 7KB 600ms (1.7fps)
 
 Done
 
-root@spire:/workspace/ip_camera# </details>
+root:/workspace/ip_camera# </details>
 
 ## How to Test
 
-Type "http://<IP_of_ESP>/jpegstream"
+Type "http://<IP_of_ESP>/jpegstream" to your browser
 
 ```
 http://172.20.10.14/jpegstream
@@ -7717,6 +7717,13 @@ And then see the streamed result
 
 <img src="./docs/images/stream_result.jpeg" width="300" height="300" />
 
+
+
+or execute the tools/http_client.py with sdp ip arg.
+
+```
+python3 tools/http_client.py <ESP_IP>
+```
 
 ### Supported Soc
 
