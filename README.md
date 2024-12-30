@@ -7707,7 +7707,7 @@ root:/workspace/ip_camera# </details>
 
 ## How to Test
 
-Type "http://<IP_of_ESP>/jpegstream"
+Type "http://<IP_of_ESP>/jpegstream" to your browser
 
 ```
 http://172.20.10.14/jpegstream
@@ -7717,6 +7717,13 @@ And then see the streamed result
 
 <img src="./docs/images/stream_result.jpeg" width="300" height="300" />
 
+
+
+or execute the tools/http_client.py with sdp ip arg.
+
+```
+python3 tools/http_client.py <ESP_IP>
+```
 
 ### Supported Soc
 
