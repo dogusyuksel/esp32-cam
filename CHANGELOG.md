@@ -1,4 +1,8 @@
-## 1.0.0
+## 1.0.2
+
+- base example is ap-sta now
+
+## 1.0.1
 
 - a python tool added to view streamed images on linux pc
 
