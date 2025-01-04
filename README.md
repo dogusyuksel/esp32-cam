@@ -273,7 +273,7 @@ I (9960) camera_http_server: Starting webserver
 
 I (9960) camera_http_server: Starting server on port: '80'
 
-I (9960) WiFi Sta: connected to ap SSID:VM7326524 password:vz7Jdjjgshfp
+I (9960) WiFi Sta: connected to ap SSID:myssid password:mypassword
 
 I (9960) camera_http_server: Registering URI handlers
 
