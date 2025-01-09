@@ -1,3 +1,10 @@
+## 1.0.3
+
+- sta ssid and sta pwd can be given at the power on via serial command
+- sta ssid and sta pwd can be given at anytime also with the "post" tool
+- sta ssid and sta pwd are save to and used from spiffs
+- softap ssid name is the mac address by default (it means unique for all devices)
+
 ## 1.0.2
 
 - base example is ap-sta now
