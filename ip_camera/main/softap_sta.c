@@ -1,19 +1,7 @@
-/*
- * SPDX-FileCopyrightText: 2023-2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-/*  WiFi softAP & station Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -38,12 +26,30 @@
 #include <esp_http_server.h>
 #include "esp_camera.h"
 #include "esp_timer.h"
+#include "esp_spiffs.h"
 
-/* The examples use WiFi configuration that you can set via project configuration menu.
+#ifndef ETH_ADDR_LEN
+#define ETH_ADDR_LEN        (6)  /* MAC Address length */
+#endif
 
-   If you'd rather not, just change the below entries to strings with
-   the config you want - ie #define EXAMPLE_ESP_WIFI_STA_SSID "mywifissid"
-*/
+esp_vfs_spiffs_conf_t spiffs_conf = {
+    .base_path = "/spiffs",
+    .partition_label = NULL,
+    .max_files = 5,
+    .format_if_mount_failed = true
+};
+
+#define STA_SSID_STR    "sta_ssid"
+#define STA_PWD_STR     "sta_pwd"
+#define AP_SSID_STR     "ap_ssid"
+#define AP_PWD_STR      "ap_pwd"
+#define CAM_RESOL       "cam_resol"
+#define CAM_QUAL        "cam_qual"
+
+#define STA_SSID_FILE_NAME  "/spiffs/sta_ssid.txt"
+#define STA_PWD_FILE_NAME   "/spiffs/sta_pwd.txt"
+#define AP_SSID_FILE_NAME   "/spiffs/ap_ssid.txt"
+#define AP_PWD_FILE_NAME    "/spiffs/ap_pwd.txt"
 
 /* STA Configuration */
 #define EXAMPLE_ESP_WIFI_STA_SSID           CONFIG_ESP_WIFI_REMOTE_AP_SSID
@@ -84,8 +90,7 @@
 /*DHCP server option*/
 #define DHCPS_OFFER_DNS             0x02
 
-static const char *TAG_AP = "WiFi SoftAP";
-static const char *TAG_STA = "WiFi Sta";
+static const char *TAG = "IPCAM";
 
 static int s_retry_num = 0;
 
@@ -93,7 +98,6 @@ static int s_retry_num = 0;
 static EventGroupHandle_t s_wifi_event_group;
 
 static httpd_handle_t server = NULL;
-static const char *TAG = "camera_http_server";
 #define PART_BOUNDARY "123456789000000000000987654321"
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
 static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
@@ -212,6 +216,49 @@ static esp_err_t init_camera(void)
     return ESP_OK;
 }
 
+static int spiffs_config_read(char *file, char *data, uint16_t sizeofdata)
+{
+    if (!file || !data) {
+        return 1;
+    }
+
+    struct stat st;
+    if (stat(file, &st) == 0) {
+        FILE *f = fopen(file, "r");
+        if (f == NULL) {
+            ESP_LOGE(TAG, "Failed to open file for reading");
+            return 1;
+        }
+        fgets(data, sizeofdata, f);
+        fclose(f);
+        data[strlen(data) - 1] = '\0';
+        ESP_LOGI(TAG, "data read from file: %s", data);
+    } else {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int spiffs_config_write(char *file, char *data)
+{
+    if (!file || !data) {
+        return 1;
+    }
+
+    unlink(file);
+    FILE *f = fopen(file, "w");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return 1;
+    }
+    fprintf(f, "%s\n", data);
+    fclose(f);
+    ESP_LOGI(TAG, "File written");
+
+    return 0;
+}
+
 static esp_err_t jpg_stream_httpd_handler(httpd_req_t *req){
     camera_fb_t * fb = NULL;
     esp_err_t res = ESP_OK;
@@ -278,6 +325,45 @@ static esp_err_t jpg_stream_httpd_handler(httpd_req_t *req){
     return res;
 }
 
+static void update_config(char *conf_name, char *conf_value)
+{
+    if (!conf_name || !conf_value) {
+        return;
+    }
+
+    if (strstr(conf_value, "NONE")) {
+        return;
+    }
+
+    if (strstr(conf_name, STA_SSID_STR)) {
+        if (strstr(conf_value, "clear")) {
+            unlink(STA_SSID_FILE_NAME);
+        } else {
+            spiffs_config_write(STA_SSID_FILE_NAME, conf_value);
+        }
+    } else if (strstr(conf_name, STA_PWD_STR)) {
+        if (strstr(conf_value, "clear")) {
+            unlink(STA_PWD_FILE_NAME);
+        } else {
+            spiffs_config_write(STA_PWD_FILE_NAME, conf_value);
+        }
+    }  else if (strstr(conf_name, AP_SSID_STR)) {
+        if (strstr(conf_value, "clear")) {
+            unlink(AP_SSID_FILE_NAME);
+        } else {
+            spiffs_config_write(AP_SSID_FILE_NAME, conf_value);
+        }
+    }   else if (strstr(conf_name, AP_PWD_STR)) {
+        if (strstr(conf_value, "clear")) {
+            unlink(AP_PWD_FILE_NAME);
+        } else {
+            spiffs_config_write(AP_PWD_FILE_NAME, conf_value);
+        }
+    } else {
+        ESP_LOGI(TAG, "unsupported config: %s:%s", conf_name, conf_value);
+    }
+}
+
 static const httpd_uri_t jpegstream = {
     .uri       = "/jpegstream",
     .method    = HTTP_ANY,
@@ -285,6 +371,76 @@ static const httpd_uri_t jpegstream = {
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = "Hello World!"
+};
+
+/* An HTTP POST handler */
+static esp_err_t setconfig_post_handler(httpd_req_t *req)
+{
+    char buf[100];
+    int ret, remaining = req->content_len;
+
+    while (remaining > 0) {
+        /* Read the data for the request */
+        if ((ret = httpd_req_recv(req, buf,
+                        MIN(remaining, sizeof(buf)))) <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                /* Retry receiving if timeout occurred */
+                continue;
+            }
+            return ESP_FAIL;
+        }
+
+        /* Send back the same data */
+        httpd_resp_send_chunk(req, buf, ret);
+        remaining -= ret;
+
+        /* Log data received */
+        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+        ESP_LOGI(TAG, "%.*s", ret, buf);
+        ESP_LOGI(TAG, "%s", buf);
+
+        uint8_t item_counter = 0;
+        char *token1 = NULL, *restbuff1 = NULL, *str1 = NULL;
+        char *token2 = NULL, *restbuff2 = NULL, *str2 = NULL;
+
+        for (str1 = buf;; str1 = NULL) {
+            token1 = strtok_r(str1, "&", &restbuff1);
+            if (token1 == NULL)
+                break;
+            ESP_LOGI(TAG, " --> %s", token1);
+
+            if (strchr(token1, (int)'=')) {
+                char conf_name[64] = {0};
+                for (str2 = token1;; str2 = NULL) {
+                    token2 = strtok_r(str2, "=", &restbuff2);
+                    if (token2 == NULL)
+                        break;
+                    ESP_LOGI(TAG, "	--> %s", token2);
+
+                    if (item_counter%2 == 0) {
+                        // it is name
+                        strcpy(conf_name, token2);
+                    } else {
+                        //it is value, so update it
+                        update_config(conf_name, token2);
+                    }
+                    item_counter++;
+                }
+            }
+        }
+        ESP_LOGI(TAG, "====================================");
+    }
+
+    // End response
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+static const httpd_uri_t setconfig = {
+    .uri       = "/setconfig",
+    .method    = HTTP_POST,
+    .handler   = setconfig_post_handler,
+    .user_ctx  = NULL
 };
 
 static httpd_handle_t start_webserver(void)
@@ -300,6 +456,7 @@ static httpd_handle_t start_webserver(void)
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &jpegstream);
+        httpd_register_uri_handler(server, &setconfig);
         return server;
     }
 
@@ -318,33 +475,31 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *) event_data;
-        ESP_LOGI(TAG_AP, "Station "MACSTR" joined, AID=%d",
+        ESP_LOGI(TAG, "Station "MACSTR" joined, AID=%d",
                  MAC2STR(event->mac), event->aid);
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *) event_data;
-        ESP_LOGI(TAG_AP, "Station "MACSTR" left, AID=%d, reason:%d",
+        ESP_LOGI(TAG, "Station "MACSTR" left, AID=%d, reason:%d",
                  MAC2STR(event->mac), event->aid, event->reason);
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
-        ESP_LOGI(TAG_STA, "Station started");
+        ESP_LOGI(TAG, "Station started");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
-        ESP_LOGI(TAG_STA, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
         
-        httpd_handle_t* server_ptr = (httpd_handle_t*) &server;
-        if (*server_ptr == NULL) {
+        if (server == NULL) {
             ESP_LOGI(TAG, "Starting webserver");
-            *server_ptr = start_webserver();
+            server = start_webserver();
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG_STA, "Disconnected");
-        httpd_handle_t* server_ptr = (httpd_handle_t*) &server;
-        if (*server_ptr) {
+        ESP_LOGI(TAG, "Disconnected");
+        if (server) {
             ESP_LOGI(TAG, "Stopping webserver");
-            if (stop_webserver(*server_ptr) == ESP_OK) {
-                *server_ptr = NULL;
+            if (stop_webserver(server) == ESP_OK) {
+                server = NULL;
             } else {
                 ESP_LOGE(TAG, "Failed to stop http server");
             }
@@ -353,8 +508,12 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 }
 
 /* Initialize soft AP */
-esp_netif_t *wifi_init_softap(void)
+esp_netif_t *wifi_init_softap(char *ap_ssid, char *ap_pwd)
 {
+    if (!ap_ssid || !ap_pwd) {
+        return NULL;
+    }
+
     esp_netif_t *esp_netif_ap = esp_netif_create_default_wifi_ap();
 
     wifi_config_t wifi_ap_config = {
@@ -370,22 +529,38 @@ esp_netif_t *wifi_init_softap(void)
             },
         },
     };
+    uint16_t copy_len = strlen(ap_ssid);
+    if (sizeof(wifi_ap_config.ap.ssid) < copy_len) {
+        copy_len = sizeof(wifi_ap_config.ap.ssid);
+    }
+    memcpy(wifi_ap_config.ap.ssid, (uint8_t *)ap_ssid, copy_len);
+    wifi_ap_config.ap.ssid_len = copy_len;
 
-    if (strlen(EXAMPLE_ESP_WIFI_AP_PASSWD) == 0) {
+    copy_len = strlen(ap_pwd);
+    if (sizeof(wifi_ap_config.ap.password) < copy_len) {
+        copy_len = sizeof(wifi_ap_config.ap.password);
+    }
+    memcpy(wifi_ap_config.ap.password, (uint8_t *)ap_pwd, copy_len);
+
+    if (strlen((char *)wifi_ap_config.ap.password) == 0) {
         wifi_ap_config.ap.authmode = WIFI_AUTH_OPEN;
     }
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
 
-    ESP_LOGI(TAG_AP, "wifi_init_softap finished. SSID:%s password:%s channel:%d",
-             EXAMPLE_ESP_WIFI_AP_SSID, EXAMPLE_ESP_WIFI_AP_PASSWD, EXAMPLE_ESP_WIFI_CHANNEL);
+    ESP_LOGI(TAG, "wifi_init_softap finished. SSID:%s password:%s channel:%d",
+             wifi_ap_config.ap.ssid, wifi_ap_config.ap.password, EXAMPLE_ESP_WIFI_CHANNEL);
 
     return esp_netif_ap;
 }
 
 /* Initialize wifi station */
-esp_netif_t *wifi_init_sta(void)
+esp_netif_t *wifi_init_sta(char *sta_ssid, char *sta_pwd)
 {
+    if (!sta_ssid || !sta_pwd) {
+        return NULL;
+    }
+
     esp_netif_t *esp_netif_sta = esp_netif_create_default_wifi_sta();
 
     wifi_config_t wifi_sta_config = {
@@ -404,9 +579,20 @@ esp_netif_t *wifi_init_sta(void)
         },
     };
 
+    uint16_t copy_len = strlen(sta_ssid);
+    if (sizeof(wifi_sta_config.sta.ssid) < copy_len) {
+        copy_len = sizeof(wifi_sta_config.sta.ssid);
+    }
+    memcpy(wifi_sta_config.sta.ssid, (uint8_t *)sta_ssid, copy_len);
+    copy_len = strlen(sta_pwd);
+    if (sizeof(wifi_sta_config.sta.password) < copy_len) {
+        copy_len = sizeof(wifi_sta_config.sta.password);
+    }
+    memcpy(wifi_sta_config.sta.password, (uint8_t *)sta_pwd, copy_len);
+
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_sta_config) );
 
-    ESP_LOGI(TAG_STA, "wifi_init_sta finished.");
+    ESP_LOGI(TAG, "wifi_init_sta finished.");
 
     return esp_netif_sta;
 }
@@ -422,8 +608,178 @@ void softap_set_dns_addr(esp_netif_t *esp_netif_ap,esp_netif_t *esp_netif_sta)
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcps_start(esp_netif_ap));
 }
 
+static void spiffs_init(void)
+{
+    ESP_LOGI(TAG, "Initializing SPIFFS");
+
+    // Use settings defined above to initialize and mount SPIFFS filesystem.
+    // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
+    esp_err_t ret = esp_vfs_spiffs_register(&spiffs_conf);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;
+    }
+
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(spiffs_conf.partition_label, &total, &used);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s). Formatting...", esp_err_to_name(ret));
+        esp_spiffs_format(spiffs_conf.partition_label);
+        return;
+    } else {
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    }
+
+    // Check consistency of reported partition size info.
+    if (used > total) {
+        ESP_LOGW(TAG, "Number of used bytes cannot be larger than total. Performing SPIFFS_check().");
+        ret = esp_spiffs_check(spiffs_conf.partition_label);
+        // Could be also used to mend broken files, to clean unreferenced pages, etc.
+        // More info at https://github.com/pellepl/spiffs/wiki/FAQ#powerlosses-contd-when-should-i-run-spiffs_check
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "SPIFFS_check() failed (%s)", esp_err_to_name(ret));
+            return;
+        } else {
+            ESP_LOGI(TAG, "SPIFFS_check() successful");
+        }
+    }
+}
+
+static void spiffs_deinit(void)
+{
+    // All done, unmount partition and disable SPIFFS
+    esp_vfs_spiffs_unregister(spiffs_conf.partition_label);
+    ESP_LOGI(TAG, "SPIFFS unmounted");
+}
+
+static int get_string_from_console(char *buffer, uint16_t buffer_size, char *tag, uint16_t timeout)
+{
+    int ret = 0;
+    int count = 0;
+    uint16_t timeout_in_ms = timeout;
+    uint8_t delay_between_checks = 10;
+    uint16_t iteration_counter = 0;
+
+    if (!buffer || !tag) {
+        return 2;
+    }
+
+    ESP_LOGI(TAG, "type %s please: ", tag);
+    while (count < buffer_size) {
+        int c = fgetc(stdin);
+        if (c == '\n') {
+            buffer[count] = '\0';
+            break;
+        } else if (c > 0 && c < (buffer_size - 1)) {
+            buffer[count] = c;
+            ++count;
+            iteration_counter = 0;
+        }
+        vTaskDelay(delay_between_checks / portTICK_PERIOD_MS);
+        iteration_counter++;
+        if (iteration_counter > (timeout_in_ms / delay_between_checks)) {
+            ESP_LOGI(TAG, "timeout");
+            ret = 1;
+            break;
+        }
+    }
+    if(strlen(buffer) < 2) {
+        // use already saved
+        ret = 1;
+    }
+    ESP_LOGI(TAG, "user typed %s: %s", tag, buffer);
+
+    return ret;
+}
+
+static void get_set_ssid_and_pwd(char *ssid, uint8_t size_ssid, char *pwd, uint8_t size_pwd,
+                                char *ap_ssid, uint8_t ap_size_ssid, char *ap_pwd, uint8_t ap_size_pwd)
+{
+    char sta_ssid_we_have[128] = {0};
+    char sta_pwd_we_have[128] = {0};
+    char ap_ssid_we_have[128] = {0};
+    char ap_pwd_we_have[128] = {0};
+
+    if (!ssid || !pwd || !ap_ssid || !ap_pwd) {
+        ESP_LOGE(TAG, "args are null");
+        return;
+    }
+
+    spiffs_init();
+
+    // // remove unlinks later
+    // unlink(STA_SSID_FILE_NAME);
+    // unlink(STA_PWD_FILE_NAME);
+    // unlink(AP_SSID_FILE_NAME);
+    // unlink(AP_PWD_FILE_NAME);
+
+    if (spiffs_config_read(STA_SSID_FILE_NAME, sta_ssid_we_have, sizeof(sta_ssid_we_have)) != 0) {
+        strcpy(sta_ssid_we_have, EXAMPLE_ESP_WIFI_STA_SSID);
+    }
+    if (spiffs_config_read(STA_PWD_FILE_NAME, sta_pwd_we_have, sizeof(sta_pwd_we_have)) != 0) {
+        strcpy(sta_pwd_we_have, EXAMPLE_ESP_WIFI_STA_PASSWD);
+    }
+    if (spiffs_config_read(AP_SSID_FILE_NAME, ap_ssid_we_have, sizeof(ap_ssid_we_have)) != 0) {
+        uint8_t i = 0, j = 0;
+        char mac_str[128] = {0};
+        uint8_t base_mac_addr[ETH_ADDR_LEN];
+
+        esp_efuse_mac_get_default(base_mac_addr);
+        for (i = 0; i < ETH_ADDR_LEN; i++, j += 2) {
+            sprintf(&mac_str[j], "%.02X", base_mac_addr[i]);
+        }
+        ESP_LOGI(TAG, "my mac: %s", mac_str);
+        strcpy(ap_ssid_we_have, mac_str);
+    }
+    if (spiffs_config_read(AP_PWD_FILE_NAME, ap_pwd_we_have, sizeof(ap_pwd_we_have)) != 0) {
+        strcpy(ap_pwd_we_have, EXAMPLE_ESP_WIFI_AP_PASSWD);
+    }
+
+    if (get_string_from_console(ssid, size_ssid, "sta_ssid", 5000) != 0) {
+        strcpy(ssid, sta_ssid_we_have);
+    }
+
+    if (get_string_from_console(pwd, size_pwd, "sta_pwd", 5000) != 0) {
+        strcpy(pwd, sta_pwd_we_have);
+    }
+
+    if (get_string_from_console(ap_ssid, ap_size_ssid, "ap_ssid", 5000) != 0) {
+        strcpy(ap_ssid, ap_ssid_we_have);
+    }
+
+    if (get_string_from_console(ap_pwd, ap_size_pwd, "ap_pwd", 5000) != 0) {
+        strcpy(ap_pwd, ap_pwd_we_have);
+    }
+
+    spiffs_config_write(STA_SSID_FILE_NAME, ssid);
+    spiffs_config_write(STA_PWD_FILE_NAME, pwd);
+    spiffs_config_write(AP_SSID_FILE_NAME, ap_ssid);
+    spiffs_config_write(AP_PWD_FILE_NAME, ap_pwd);
+
+    //spiffs_deinit();
+}
+
 void app_main(void)
 {
+    char sta_ssid[128] = {0};
+    char sta_pwd[128] = {0};
+    char ap_ssid[128] = {0};
+    char ap_pwd[128] = {0};
+
+    get_set_ssid_and_pwd(sta_ssid, sizeof(sta_ssid), sta_pwd, sizeof(sta_pwd),
+                        ap_ssid, sizeof(ap_ssid), ap_pwd, sizeof(ap_pwd));
+    ESP_LOGI(TAG, "final decision sta_ssid: %s", sta_ssid);
+    ESP_LOGI(TAG, "final decision sta_pwd:  %s", sta_pwd);
+    ESP_LOGI(TAG, "final decision ap_ssid:  %s", ap_ssid);
+    ESP_LOGI(TAG, "final decision ap_pwd:   %s", ap_pwd);
+
     if(ESP_OK != init_camera()) {
         return;
     }
@@ -467,12 +823,12 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
     /* Initialize AP */
-    ESP_LOGI(TAG_AP, "ESP_WIFI_MODE_AP");
-    esp_netif_t *esp_netif_ap = wifi_init_softap();
+    ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
+    esp_netif_t *esp_netif_ap = wifi_init_softap(ap_ssid, ap_pwd);
 
     /* Initialize STA */
-    ESP_LOGI(TAG_STA, "ESP_WIFI_MODE_STA");
-    esp_netif_t *esp_netif_sta = wifi_init_sta();
+    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+    esp_netif_t *esp_netif_sta = wifi_init_sta(sta_ssid, sta_pwd);
 
     /* Start WiFi */
     ESP_ERROR_CHECK(esp_wifi_start() );
@@ -491,14 +847,14 @@ void app_main(void)
     /* xEventGroupWaitBits() returns the bits before the call returned,
      * hence we can test which event actually happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG_STA, "connected to ap SSID:%s password:%s",
-                 EXAMPLE_ESP_WIFI_STA_SSID, EXAMPLE_ESP_WIFI_STA_PASSWD);
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
+                 sta_ssid, sta_pwd);
         softap_set_dns_addr(esp_netif_ap,esp_netif_sta);
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG_STA, "Failed to connect to SSID:%s, password:%s",
-                 EXAMPLE_ESP_WIFI_STA_SSID, EXAMPLE_ESP_WIFI_STA_PASSWD);
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
+                 sta_ssid, sta_pwd);
     } else {
-        ESP_LOGE(TAG_STA, "UNEXPECTED EVENT");
+        ESP_LOGE(TAG, "UNEXPECTED EVENT");
         return;
     }
 
@@ -507,6 +863,6 @@ void app_main(void)
 
     /* Enable napt on the AP netif */
     if (esp_netif_napt_enable(esp_netif_ap) != ESP_OK) {
-        ESP_LOGE(TAG_STA, "NAPT not enabled on the netif: %p", esp_netif_ap);
+        ESP_LOGE(TAG, "NAPT not enabled on the netif: %p", esp_netif_ap);
     }
 }
